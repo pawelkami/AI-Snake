@@ -2,54 +2,53 @@ from pygame.locals import *
 import pygame
 import enum
 
+INITIAL_LENGTH = 1
 
 class Move(enum.Enum):
     UP = 1
     DOWN = 2
     RIGHT = 3
     LEFT = 4
+    
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 
 class Player:
     def __init__(self):
-        position = []
-        self.x = 10
-        self.y = 10
-        self.speed = 5
-        self.score = 0
+        self.positions = [Position(100, 100), Position(80, 100)]
         self.last_move = Move.RIGHT
         self.image = pygame.image.load('img/body.png')
+        self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
         
     
     def get_first_block_rect(self):
-        return pygame.Rect(self.x, self.y, 20, 20)
+        return self.image.get_rect().move((self.positions[0].x, self.positions[0].y))
+    
+    def get_snake_length(self):
+        return len(self.positions)
+    
+    def get_score(self):
+        return self.get_snake_length() - INITIAL_LENGTH
     
     def set_move(self, move):
         self.last_move = move
         
-        
-    def make_move(self):
-        if self.last_move == Move.UP:
-            self.move_up()
-        elif self.last_move == Move.DOWN:
-            self.move_down()
-        elif self.last_move == Move.LEFT:
-            self.move_left()
-        elif self.last_move == Move.RIGHT:
-            self.move_right()
+    def update(self):
+        for i in range(len(self.positions) - 1, 0, -1):
+            self.positions[i].x = self.positions[i-1].x
+            self.positions[i].y = self.positions[i-1].y
             
-    
-    def move_right(self):
-        self.x += self.speed
-    
-    def move_left(self):
-        self.x -= self.speed
-    
-    def move_up(self):
-        self.y -= self.speed
-    
-    def move_down(self):
-        self.y += self.speed
+        if self.last_move == Move.UP:
+            self.positions[0].y -= self.step
+        elif self.last_move == Move.DOWN:
+            self.positions[0].y += self.step
+        elif self.last_move == Move.LEFT:
+            self.positions[0].x -= self.step
+        elif self.last_move == Move.RIGHT:
+            self.positions[0].x += self.step
         
         
 class Game:
@@ -103,7 +102,7 @@ class Game:
         text_game_count = myfont.render('GAME COUNT: ', True, (255, 255, 255))
         text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))
         text_score = myfont.render('SCORE: ', True, (255, 255, 255))
-        text_score_number = myfont.render(str(self.player.score), True, (255, 255, 255))
+        text_score_number = myfont.render(str(self.player.get_score()), True, (255, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
         self._display_surf.blit(text_game_count, (45, self.window_height + 50))
@@ -113,11 +112,11 @@ class Game:
         self._display_surf.blit(text_score_number, (150, self.window_height + 100))
         self._display_surf.blit(text_highest, (220, self.window_height + 100))
         self._display_surf.blit(text_highest_number, (430, self.window_height + 100))
-        #self._display_surf.blit(game.bg, (10, 10))
-        pass
-    
+
+
     def draw_snake(self):
-        self._display_surf.blit(self._image_surf, (self.player.x, self.player.y))
+        for p in self.player.positions:
+            self._display_surf.blit(self._image_surf, (p.x, p.y))
         
         
     def draw_fruit(self):
@@ -153,8 +152,8 @@ class Game:
             self._running = False
         
         
-    def make_move(self):
-        self.player.make_move()
+    def update_snake(self):
+        self.player.update()
         
         
     def run(self):
@@ -162,10 +161,11 @@ class Game:
         
         while self._running:
             self.read_move()
-            self.make_move()
+            self.update_snake()
                 
             self.on_loop()
             self.on_render()
+            pygame.time.wait(100)
         self.on_cleanup()
     
     
