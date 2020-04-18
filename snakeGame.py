@@ -1,27 +1,53 @@
 from pygame.locals import *
 import pygame
 import enum
+import random
 
 INITIAL_LENGTH = 1
 
 class Move(enum.Enum):
     UP = 1
-    DOWN = 2
-    RIGHT = 3
+    RIGHT = 2
+    DOWN = 3
     LEFT = 4
+    
+    def __int__(self):
+        return self.value
+    
     
 class Position:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __hash__(self):
+        return hash(str(self.x) + ',' + str(self.y))
+    
+
+class Fruit:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.image = pygame.image.load('img/fruit.png')
+        
+    def get_rect(self):
+        return self.image.get_rect().move((self.x, self.y))
+    
 
 
 class Player:
     def __init__(self):
-        self.positions = [Position(100, 100), Position(80, 100)]
+        self.positions = [Position(100, 100)]
         self.last_move = Move.RIGHT
         self.image = pygame.image.load('img/body.png')
         self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
+        
+        
+    def make_bigger(self):
+        self.positions.append(Position(0, 0))
         
     
     def get_first_block_rect(self):
@@ -34,7 +60,8 @@ class Player:
         return self.get_snake_length() - INITIAL_LENGTH
     
     def set_move(self, move):
-        self.last_move = move
+        if abs(int(self.last_move) - int(move)) != 2:
+            self.last_move = move
         
     def update(self):
         for i in range(len(self.positions) - 1, 0, -1):
@@ -54,17 +81,18 @@ class Player:
 class Game:
     window_width = 800
     window_height = 800
-    border_width = 50
+    border_width = 40
     player = None
+    fruit = None
     
     def __init__(self):
         self._running = True
         self._display_surf = None
-        self._image_surf = None
         self.board_rect = None
         self.highscore = 0
         self.game_count = 1
         self.player = Player()
+        self.fruit = Fruit()
         
     
     def init(self):
@@ -75,24 +103,16 @@ class Game:
         pygame.display.set_caption('AI SNAKE')
         
         self._running = True
-        self._image_surf = self.player.image
+        
+        self.generate_fruit()
         
     
     def is_player_inside_board(self):
         return self.board_rect.contains(self.player.get_first_block_rect())
         
-        
-    def on_event(self, event):
-        if event.type == QUIT:
-            self._running = False
-
-
-    def on_loop(self):
-        pass
     
     def draw_board(self):
         self._display_surf.fill((0, 0, 0))    # border
-        print("Player in rect: " + str(self.is_player_inside_board()))
         pygame.draw.rect(self._display_surf, (255, 255, 255), self.board_rect) # board where snake moves
         
         
@@ -116,14 +136,24 @@ class Game:
 
     def draw_snake(self):
         for p in self.player.positions:
-            self._display_surf.blit(self._image_surf, (p.x, p.y))
+            self._display_surf.blit(self.player.image, (p.x, p.y))
         
         
     def draw_fruit(self):
-        pass
+        self._display_surf.blit(self.fruit.image, (self.fruit.x, self.fruit.y))
+        
+        
+    def generate_fruit(self):
+        self.fruit.x = random.randint(self.board_rect.left, self.board_rect.right - 20)
+        self.fruit.y = random.randint(self.board_rect.top, self.board_rect.bottom - 20)
+        
+        self.fruit.x -= self.fruit.x % 20
+        self.fruit.y -= self.fruit.y % 20
+        
+        # todo check if fruit is generated on snake body?
         
     
-    def on_render(self):
+    def render(self):
         self.draw_board()
         self.draw_ui()
         self.draw_snake()
@@ -132,7 +162,7 @@ class Game:
         pygame.display.flip()
         
         
-    def on_cleanup(self):
+    def cleanup(self):
         pygame.quit()
         
     def read_move(self):
@@ -155,21 +185,37 @@ class Game:
     def update_snake(self):
         self.player.update()
         
+    
+    def check_collisions(self):
+        if not self.is_player_inside_board():
+            self._running = False
+            
+        if len(self.player.positions) != len(set(self.player.positions)):
+            # there are duplicates -> snake is colliding with itself
+            self._running = False
+        
+        if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
+            self.player.make_bigger()
+            self.generate_fruit()
+            if self.player.get_score() > self.highscore:
+                self.highscore = self.player.get_score()
+        
         
     def run(self):
         self.init()
-        
+        self.generate_fruit()
         while self._running:
             self.read_move()
             self.update_snake()
+            
+            self.check_collisions()
                 
-            self.on_loop()
-            self.on_render()
+            self.render()
             pygame.time.wait(100)
-        self.on_cleanup()
     
     
     
 if __name__ == "__main__":
     game = Game()
     game.run()
+    game.cleanup()
