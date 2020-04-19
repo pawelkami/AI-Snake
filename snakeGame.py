@@ -3,27 +3,10 @@ import pygame
 import enum
 import random
 import argparse
+from ai import *
+from controller import *
 
 INITIAL_LENGTH = 1
-
-class Move(enum.Enum):
-    UP = 1
-    RIGHT = 2
-    DOWN = 3
-    LEFT = 4
-    
-    NONE = 255
-    
-    def __int__(self):
-        return self.value
-    
-
-class CellItemType(enum.Enum):
-    EMPTY = 0
-    BODY = 1
-    HEAD = 2
-    FRUIT = 4
-    
     
 class Position:
     def __init__(self, x, y):
@@ -45,80 +28,13 @@ class Fruit:
     def get_rect(self):
         return self.image.get_rect().move((self.position.x, self.position.y))
     
-    
-class Controller:
-    player = None
-    game = None
-    
-    def make_move(self):
-        pass
-    
-    def update_state(self):
-        pass
 
-class KeyboardController(Controller):
-    player = None
-    game = None
-    
-    def make_move(self):
-        pygame.event.pump()
-        keys = pygame.key.get_pressed()
-        move = Move.NONE
-        
-        if keys[K_RIGHT]:
-            move = Move.RIGHT
-        elif keys[K_LEFT]:
-            move = Move.LEFT
-        elif keys[K_UP]:
-            move = Move.UP
-        elif keys[K_DOWN]:
-            move = Move.DOWN
-            
-        self.player.set_move(move)
-    
-    def update_state(self):
-        pass
-    
-
-class AIController(Controller):
-    player = None
-    game = None
-    
-    def make_move(self):
-        self.player.set_move(Move(random.randint(1,4)))
-    
-    def update_state(self):
-        if not game.is_end():
-            board = self.board_state_to_list()
-            # TODO
-    
-    def coordinates_to_board_index(self, x, y):
-        tmp_x = (x - self.game.board_rect.top) / self.player.step
-        tmp_y = (y - self.game.board_rect.left) / self.player.step
-        
-        width = (self.game.board_rect.right - self.game.board_rect.left) / self.player.step
-        return int(tmp_y * width + tmp_x)
-    
-    def board_state_to_list(self):
-        board = []
-        for row in range(self.game.board_rect.top, self.game.board_rect.bottom, self.player.step):
-            for col in range(self.game.board_rect.left, self.game.board_rect.right, self.player.step):
-                board.append(CellItemType.EMPTY.value)
-                
-        board[self.coordinates_to_board_index(self.game.fruit.position.x, self.game.fruit.position.y)] = CellItemType.FRUIT.value
-        
-        for pos in self.player.positions:
-            board[self.coordinates_to_board_index(pos.x, pos.y)] = CellItemType.BODY.value
-        
-        snake_head = self.player.positions[0]
-        board[self.coordinates_to_board_index(snake_head.x, snake_head.y)] = CellItemType.HEAD.value
-        
-        return board
-    
 
 class Player:
     def __init__(self):
-        self.positions = [Position(100, 100)]
+        self.positions = []
+        for i in range(0, INITIAL_LENGTH):
+            self.positions.append(Position(0, 0))
         self.last_move = Move.NONE
         self.image = pygame.image.load('img/body.png')
         self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
@@ -327,7 +243,6 @@ if __name__ == "__main__":
     parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
     parser.add_argument('--count', type=int, default=100, help='Game count to play. Default: 100')
     args = parser.parse_args()
-    
     
     controller = KeyboardController()
     if args.ai:
