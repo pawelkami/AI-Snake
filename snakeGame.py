@@ -17,6 +17,13 @@ class Move(enum.Enum):
     def __int__(self):
         return self.value
     
+
+class CellItemType(enum.Enum):
+    EMPTY = 0
+    BODY = 1
+    HEAD = 2
+    FRUIT = 4
+    
     
 class Position:
     def __init__(self, x, y):
@@ -41,6 +48,8 @@ class Fruit:
     
 class Controller:
     player = None
+    game = None
+    
     def make_move(self):
         pass
     
@@ -49,6 +58,8 @@ class Controller:
 
 class KeyboardController(Controller):
     player = None
+    game = None
+    
     def make_move(self):
         pygame.event.pump()
         keys = pygame.key.get_pressed()
@@ -71,11 +82,38 @@ class KeyboardController(Controller):
 
 class AIController(Controller):
     player = None
+    game = None
+    
     def make_move(self):
         self.player.set_move(Move(random.randint(1,4)))
     
     def update_state(self):
-        pass
+        if not game.is_end():
+            board = self.board_state_to_list()
+            # TODO
+    
+    def coordinates_to_board_index(self, x, y):
+        tmp_x = (x - self.game.board_rect.top) / self.player.step
+        tmp_y = (y - self.game.board_rect.left) / self.player.step
+        
+        width = (self.game.board_rect.right - self.game.board_rect.left) / self.player.step
+        return int(tmp_y * width + tmp_x)
+    
+    def board_state_to_list(self):
+        board = []
+        for row in range(self.game.board_rect.top, self.game.board_rect.bottom, self.player.step):
+            for col in range(self.game.board_rect.left, self.game.board_rect.right, self.player.step):
+                board.append(CellItemType.EMPTY.value)
+                
+        board[self.coordinates_to_board_index(self.game.fruit.position.x, self.game.fruit.position.y)] = CellItemType.FRUIT.value
+        
+        for pos in self.player.positions:
+            board[self.coordinates_to_board_index(pos.x, pos.y)] = CellItemType.BODY.value
+        
+        snake_head = self.player.positions[0]
+        board[self.coordinates_to_board_index(snake_head.x, snake_head.y)] = CellItemType.HEAD.value
+        
+        return board
     
 
 class Player:
@@ -87,7 +125,7 @@ class Player:
         
         
     def make_bigger(self):
-        self.positions.append(Position(0, 0))
+        self.positions.append(Position(self.positions[-1].x, self.positions[-1].y))
         
     
     def get_first_block_rect(self):
@@ -151,7 +189,10 @@ class Game:
         pygame.display.set_caption('AI SNAKE')
         self.player = Player()
         self.controller.player = self.player
+        self.controller.game = self
         self.border_width = 3 * self.player.step
+        self.window_width = 40 * self.player.step
+        self.window_height = 40 * self.player.step
         
         self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
@@ -167,6 +208,9 @@ class Game:
     
     def get_score(self):
         return self.player.get_score()
+    
+    def is_end(self):
+        return not self._running
         
     
     def draw_board(self):
@@ -212,8 +256,8 @@ class Game:
         self.fruit.position.x = random.randint(self.board_rect.left, self.board_rect.right - 1)
         self.fruit.position.y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
-        self.fruit.position.x -= self.fruit.position.x % 20
-        self.fruit.position.y -= self.fruit.position.y % 20
+        self.fruit.position.x -= self.fruit.position.x % self.player.step
+        self.fruit.position.y -= self.fruit.position.y % self.player.step
         
         # check if fruit is generated on snake body by mistake
         if self.fruit.position in self.player.positions:
@@ -265,11 +309,11 @@ class Game:
     def run(self):
         self.init()
         self.game_count += 1
-        while self._running:
+        while not self.is_end():
             self.render()
             self.read_move()
-            self.update_snake()
             
+            self.update_snake()
             self.check_collisions()
                 
             self.controller.update_state()
