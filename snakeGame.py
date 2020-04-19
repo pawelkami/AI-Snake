@@ -153,6 +153,7 @@ class Game:
         self._generate_init_player_state()
         self.generate_fruit()
         self._running = True
+        self.moves_left = 200
         
     
     def is_player_inside_board(self):
@@ -167,19 +168,26 @@ class Game:
     def draw_ui(self):
         myfont = pygame.font.SysFont('Segoe UI', 32)
         myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
+        
         text_game_count = myfont.render('GAME COUNT: ', True, (255, 255, 255))
-        text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))
+        text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))  
+        text_moves_left = myfont.render('MOVES LEFT: ', True, (255, 255, 255))
+        text_moves_left_number = myfont.render(str(self.moves_left), True, (255, 255, 255))
+        
         text_score = myfont.render('SCORE: ', True, (255, 255, 255))
         text_score_number = myfont.render(str(self.player.get_score()), True, (255, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
+        
         self._display_surf.blit(text_game_count, (45, self.window_height + 50))
         self._display_surf.blit(text_game_count_number, (220, self.window_height + 50))
+        self._display_surf.blit(text_moves_left, (280, self.window_height + 50))
+        self._display_surf.blit(text_moves_left_number, (480, self.window_height + 50))
         
         self._display_surf.blit(text_score, (45, self.window_height + 100))
         self._display_surf.blit(text_score_number, (150, self.window_height + 100))
-        self._display_surf.blit(text_highest, (220, self.window_height + 100))
-        self._display_surf.blit(text_highest_number, (430, self.window_height + 100))
+        self._display_surf.blit(text_highest, (280, self.window_height + 100))
+        self._display_surf.blit(text_highest_number, (480, self.window_height + 100))
 
 
     def draw_snake(self):
@@ -216,10 +224,10 @@ class Game:
         pygame.quit()
         
     def read_move(self):
+        last_move = self.player.last_move
         self.player.set_move(self.controller.get_move())
-            
-        # if keys[K_ESCAPE]:
-        #     self._running = False
+        if last_move != self.player.last_move:
+            self.moves_left -= 1
         
         
     def update_snake(self):
@@ -230,12 +238,16 @@ class Game:
         if not self.is_player_inside_board():
             self._running = False
             
+        if self.moves_left <= 0:
+            self._running = False         
+            
         if len(self.player.positions) != len(set(self.player.positions)):
             # there are duplicates -> snake is colliding with itself
             self._running = False
         
         if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
             self.player.make_bigger()
+            self.moves_left += 500
             self.generate_fruit()
             if self.player.get_score() > self.highscore:
                 self.highscore = self.player.get_score()
