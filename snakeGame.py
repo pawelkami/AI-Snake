@@ -123,7 +123,6 @@ class Player:
 class Game:
     window_width = 800
     window_height = 800
-    border_width = 40
     player = None
     fruit = None
     
@@ -142,23 +141,25 @@ class Game:
         self.player.positions[0].x = random.randint(self.board_rect.left, self.board_rect.right - 1)
         self.player.positions[0].y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
-        self.player.positions[0].x -= self.player.positions[0].x % 20
-        self.player.positions[0].y -= self.player.positions[0].y % 20
+        self.player.positions[0].x -= self.player.positions[0].x % self.player.step
+        self.player.positions[0].y -= self.player.positions[0].y % self.player.step
         
-        self.player.set_move(Move(random.randint(1,4)))
+        self.player.set_move(Move(random.randint(1, 4)))
     
     
     def init(self):
-        self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
-        self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
-        
         pygame.display.set_caption('AI SNAKE')
         self.player = Player()
         self.controller.player = self.player
+        self.border_width = 3 * self.player.step
+        
+        self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
+        self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
+        
         self._generate_init_player_state()
         self.generate_fruit()
-        self._running = True
         self.moves_left = 200
+        self._running = True
         
     
     def is_player_inside_board(self):
