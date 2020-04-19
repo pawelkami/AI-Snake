@@ -40,14 +40,16 @@ class Fruit:
     
     
 class Controller:
-    def get_move(self):
+    player = None
+    def make_move(self):
         pass
     
-    def update_state(self, player):
+    def update_state(self):
         pass
 
 class KeyboardController(Controller):
-    def get_move(self):
+    player = None
+    def make_move(self):
         pygame.event.pump()
         keys = pygame.key.get_pressed()
         move = Move.NONE
@@ -61,17 +63,18 @@ class KeyboardController(Controller):
         elif keys[K_DOWN]:
             move = Move.DOWN
             
-        return move
+        self.player.set_move(move)
     
-    def update_state(self, player):
+    def update_state(self):
         pass
     
 
 class AIController(Controller):
-    def get_move(self):
-        return Move(random.randint(1,4))
+    player = None
+    def make_move(self):
+        self.player.set_move(Move(random.randint(1,4)))
     
-    def update_state(self, player):
+    def update_state(self):
         pass
     
 
@@ -151,6 +154,7 @@ class Game:
         
         pygame.display.set_caption('AI SNAKE')
         self.player = Player()
+        self.controller.player = self.player
         self._generate_init_player_state()
         self.generate_fruit()
         self._running = True
@@ -229,7 +233,7 @@ class Game:
         
     def read_move(self):
         last_move = self.player.last_move
-        self.player.set_move(self.controller.get_move())
+        self.controller.make_move()
         if last_move != self.player.last_move:
             self.moves_left -= 1
         
@@ -267,7 +271,7 @@ class Game:
             
             self.check_collisions()
                 
-            self.controller.update_state(self.player)
+            self.controller.update_state()
             pygame.time.wait(self.speed)
     
     
