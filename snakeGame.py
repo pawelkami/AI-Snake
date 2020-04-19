@@ -2,6 +2,7 @@ from pygame.locals import *
 import pygame
 import enum
 import random
+import argparse
 
 INITIAL_LENGTH = 1
 
@@ -256,7 +257,16 @@ class Game:
     
     
 if __name__ == "__main__":
-    game = Game(KeyboardController())
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ai', action='store_true', help="AI controlls snake")
+    args = parser.parse_args()
+    
+    
+    controller = KeyboardController()
+    if args.ai:
+        controller = AIController()
+        
+    game = Game(controller)
     while True:
         game.run()
     game.cleanup()
