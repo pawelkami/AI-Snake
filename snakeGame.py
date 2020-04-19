@@ -159,6 +159,9 @@ class Game:
     
     def is_player_inside_board(self):
         return self.board_rect.contains(self.player.get_first_block_rect())
+    
+    def get_score(self):
+        return self.player.get_score()
         
     
     def draw_board(self):
@@ -176,7 +179,7 @@ class Game:
         text_moves_left_number = myfont.render(str(self.moves_left), True, (255, 255, 255))
         
         text_score = myfont.render('SCORE: ', True, (255, 255, 255))
-        text_score_number = myfont.render(str(self.player.get_score()), True, (255, 255, 255))
+        text_score_number = myfont.render(str(self.get_score()), True, (255, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
         
@@ -273,6 +276,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ai', action='store_true', help="AI controlls snake")
     parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
+    parser.add_argument('--count', type=int, default=100, help='Game count to play. Default: 100')
     args = parser.parse_args()
     
     
@@ -280,7 +284,13 @@ if __name__ == "__main__":
     if args.ai:
         controller = AIController()
         
+    score_in_game = []
+    highscore_in_game = [] 
+    
     game = Game(controller, args.speed)
-    while True:
+    while game.game_count < args.count:
         game.run()
+        score_in_game.append(game.get_score())
+        highscore_in_game.append(game.highscore)
+        
     game.cleanup()
