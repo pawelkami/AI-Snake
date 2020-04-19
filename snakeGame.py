@@ -11,6 +11,8 @@ class Move(enum.Enum):
     DOWN = 3
     LEFT = 4
     
+    NONE = 255
+    
     def __int__(self):
         return self.value
     
@@ -29,19 +31,53 @@ class Position:
 
 class Fruit:
     def __init__(self):
-        self.x = 0
-        self.y = 0
+        self.position = Position(0, 0)
         self.image = pygame.image.load('img/fruit.png')
         
     def get_rect(self):
-        return self.image.get_rect().move((self.x, self.y))
+        return self.image.get_rect().move((self.position.x, self.position.y))
+    
+    
+class Controller:
+    def get_move(self):
+        pass
+    
+    def update_state(self, player):
+        pass
+
+class KeyboardController(Controller):
+    def get_move(self):
+        pygame.event.pump()
+        keys = pygame.key.get_pressed()
+        move = Move.NONE
+        
+        if keys[K_RIGHT]:
+            move = Move.RIGHT
+        elif keys[K_LEFT]:
+            move = Move.LEFT
+        elif keys[K_UP]:
+            move = Move.UP
+        elif keys[K_DOWN]:
+            move = Move.DOWN
+            
+        return move
+    
+    def update_state(self, player):
+        pass
     
 
+class AIController(Controller):
+    def get_move(self):
+        return Move(random.randint(1,4))
+    
+    def update_state(self, player):
+        pass
+    
 
 class Player:
     def __init__(self):
         self.positions = [Position(100, 100)]
-        self.last_move = Move.RIGHT
+        self.last_move = Move.NONE
         self.image = pygame.image.load('img/body.png')
         self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
         
@@ -60,6 +96,8 @@ class Player:
         return self.get_snake_length() - INITIAL_LENGTH
     
     def set_move(self, move):
+        if move == Move.NONE:
+            return
         if abs(int(self.last_move) - int(move)) != 2:
             self.last_move = move
         
@@ -85,26 +123,35 @@ class Game:
     player = None
     fruit = None
     
-    def __init__(self):
+    def __init__(self, controller):
+        pygame.init()
         self._running = True
         self._display_surf = None
         self.board_rect = None
         self.highscore = 0
-        self.game_count = 1
-        self.player = Player()
+        self.game_count = 0
+        self.controller = controller
         self.fruit = Fruit()
         
+    def _generate_init_player_state(self):
+        self.player.positions[0].x = random.randint(self.board_rect.left, self.board_rect.right - 1)
+        self.player.positions[0].y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
+        
+        self.player.positions[0].x -= self.player.positions[0].x % 20
+        self.player.positions[0].y -= self.player.positions[0].y % 20
+        
+        self.player.set_move(Move(random.randint(1,4)))
+    
     
     def init(self):
-        pygame.init()
         self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
         pygame.display.set_caption('AI SNAKE')
-        
-        self._running = True
-        
+        self.player = Player()
+        self._generate_init_player_state()
         self.generate_fruit()
+        self._running = True
         
     
     def is_player_inside_board(self):
@@ -140,17 +187,19 @@ class Game:
         
         
     def draw_fruit(self):
-        self._display_surf.blit(self.fruit.image, (self.fruit.x, self.fruit.y))
+        self._display_surf.blit(self.fruit.image, (self.fruit.position.x, self.fruit.position.y))
         
         
     def generate_fruit(self):
-        self.fruit.x = random.randint(self.board_rect.left, self.board_rect.right - 20)
-        self.fruit.y = random.randint(self.board_rect.top, self.board_rect.bottom - 20)
+        self.fruit.position.x = random.randint(self.board_rect.left, self.board_rect.right - 1)
+        self.fruit.position.y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
-        self.fruit.x -= self.fruit.x % 20
-        self.fruit.y -= self.fruit.y % 20
+        self.fruit.position.x -= self.fruit.position.x % 20
+        self.fruit.position.y -= self.fruit.position.y % 20
         
-        # todo check if fruit is generated on snake body?
+        # check if fruit is generated on snake body by mistake
+        if self.fruit.position in self.player.positions:
+            self.generate_fruit()
         
     
     def render(self):
@@ -166,20 +215,10 @@ class Game:
         pygame.quit()
         
     def read_move(self):
-        pygame.event.pump()
-        keys = pygame.key.get_pressed()
-        
-        if keys[K_RIGHT]:
-            self.player.set_move(Move.RIGHT)
-        elif keys[K_LEFT]:
-            self.player.set_move(Move.LEFT)
-        elif keys[K_UP]:
-            self.player.set_move(Move.UP)
-        elif keys[K_DOWN]:
-            self.player.set_move(Move.DOWN)
+        self.player.set_move(self.controller.get_move())
             
-        if keys[K_ESCAPE]:
-            self._running = False
+        # if keys[K_ESCAPE]:
+        #     self._running = False
         
         
     def update_snake(self):
@@ -203,19 +242,21 @@ class Game:
         
     def run(self):
         self.init()
-        self.generate_fruit()
+        self.game_count += 1
         while self._running:
+            self.render()
             self.read_move()
             self.update_snake()
             
             self.check_collisions()
                 
-            self.render()
+            self.controller.update_state(self.player)
             pygame.time.wait(100)
     
     
     
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    game = Game(KeyboardController())
+    while True:
+        game.run()
     game.cleanup()
