@@ -14,7 +14,11 @@ class AIController(Controller):
     game = None
     
     def make_move(self):
-        self.player.set_move(Move(random.randint(1,4)))
+        move = random.randint(0, 2)
+        if move == 0:
+            self.player.turn_left()
+        elif move == 2:
+            self.player.turn_right()
     
     def update_state(self):
         if not self.game.is_end():

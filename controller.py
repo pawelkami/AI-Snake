@@ -3,12 +3,10 @@ from pygame.locals import *
 import enum
 
 class Move(enum.Enum):
-    UP = 1
-    RIGHT = 2
-    DOWN = 3
-    LEFT = 4
-    
-    NONE = 255
+    UP = 0
+    RIGHT = 1
+    DOWN = 2
+    LEFT = 3
     
     def __int__(self):
         return self.value
@@ -30,18 +28,12 @@ class KeyboardController(Controller):
     def make_move(self):
         pygame.event.pump()
         keys = pygame.key.get_pressed()
-        move = Move.NONE
         
         if keys[K_RIGHT]:
-            move = Move.RIGHT
+            self.player.turn_right()
         elif keys[K_LEFT]:
-            move = Move.LEFT
-        elif keys[K_UP]:
-            move = Move.UP
-        elif keys[K_DOWN]:
-            move = Move.DOWN
+            self.player.turn_left()
             
-        self.player.set_move(move)
     
     def update_state(self):
         pass

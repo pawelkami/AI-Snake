@@ -35,7 +35,7 @@ class Player:
         self.positions = []
         for i in range(0, INITIAL_LENGTH):
             self.positions.append(Position(0, 0))
-        self.last_move = Move.NONE
+        self.last_move = Move.LEFT
         self.image = pygame.image.load('img/body.png')
         self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
         
@@ -53,11 +53,14 @@ class Player:
     def get_score(self):
         return self.get_snake_length() - INITIAL_LENGTH
     
-    def set_move(self, move):
-        if move == Move.NONE:
-            return
-        if abs(int(self.last_move) - int(move)) != 2:
-            self.last_move = move
+    def turn_left(self):
+        self.last_move = Move((self.last_move.value - 1) % 4)
+    
+    def turn_right(self):
+        self.last_move = Move((self.last_move.value + 1) % 4)
+    
+    def _set_move(self, move):
+        self.last_move = move
         
     def update(self):
         for i in range(len(self.positions) - 1, 0, -1):
@@ -98,7 +101,7 @@ class Game:
         self.player.positions[0].x -= self.player.positions[0].x % self.player.step
         self.player.positions[0].y -= self.player.positions[0].y % self.player.step
         
-        self.player.set_move(Move(random.randint(1, 4)))
+        self.player._set_move(Move(random.randint(0, 3)))
     
     
     def init(self):
