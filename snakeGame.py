@@ -124,13 +124,14 @@ class Game:
     player = None
     fruit = None
     
-    def __init__(self, controller):
+    def __init__(self, controller, speed):
         pygame.init()
         self._running = True
         self._display_surf = None
         self.board_rect = None
         self.highscore = 0
         self.game_count = 0
+        self.speed = speed
         self.controller = controller
         self.fruit = Fruit()
         
@@ -264,13 +265,14 @@ class Game:
             self.check_collisions()
                 
             self.controller.update_state(self.player)
-            pygame.time.wait(100)
+            pygame.time.wait(self.speed)
     
     
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ai', action='store_true', help="AI controlls snake")
+    parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
     args = parser.parse_args()
     
     
@@ -278,7 +280,7 @@ if __name__ == "__main__":
     if args.ai:
         controller = AIController()
         
-    game = Game(controller)
+    game = Game(controller, args.speed)
     while True:
         game.run()
     game.cleanup()
