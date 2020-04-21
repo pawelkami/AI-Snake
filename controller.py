@@ -1,6 +1,21 @@
 import pygame
 from pygame.locals import *
 import enum
+import math
+
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __hash__(self):
+        return hash(str(self.x) + ',' + str(self.y))
+    
+    def distance(self, other):
+        return math.sqrt((other.x - self.x) ** 2 + (other.y - self.y) ** 2)
 
 class Move(enum.Enum):
     UP = 0
