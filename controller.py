@@ -15,6 +15,10 @@ class Controller:
     player = None
     game = None
     
+    def init(self, player, game):
+        self.player = player
+        self.game = game
+    
     def make_move(self):
         pass
     
@@ -24,6 +28,10 @@ class Controller:
 class KeyboardController(Controller):
     player = None
     game = None
+    
+    def init(self, player, game):
+        self.player = player
+        self.game = game
     
     def make_move(self):
         pygame.event.pump()
