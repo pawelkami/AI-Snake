@@ -8,6 +8,7 @@ from controller import *
 
 INITIAL_LENGTH = 1
 WINDOW_TO_STEP_MULTIPLIER = 20
+MAX_MOVES_COUNT = 150
     
 class Fruit:
     def __init__(self):
@@ -104,7 +105,7 @@ class Game:
         self._generate_init_player_state()
         self.generate_fruit()
         self.controller.init(self.player, self)
-        self.moves_left = 200
+        self.moves_left = MAX_MOVES_COUNT
         self._running = True
         
     
@@ -185,7 +186,7 @@ class Game:
         last_move = self.player.last_move
         self.controller.make_move()
         if last_move != self.player.last_move:
-            self.moves_left -= 1
+            self.moves_left -= 1 # TODO -= 200
         
         
     def update_snake(self):
@@ -205,7 +206,7 @@ class Game:
         
         if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
             self.player.make_bigger()
-            self.moves_left += 500
+            self.moves_left = MAX_MOVES_COUNT
             self.generate_fruit()
             if self.player.get_score() > self.highscore:
                 self.highscore = self.player.get_score()
@@ -245,6 +246,9 @@ if __name__ == "__main__":
         game.run()
         score_in_game.append(game.get_score())
         highscore_in_game.append(game.highscore)
-        print("Game count: {} Highscore: {}".format(game.game_count, game.highscore))
+        print("Game count: {} Highscore: {} Score: {}".format(game.game_count, game.highscore, game.get_score()))
+        
+        if args.ai:
+            controller.neural_network.save_weights('nn.dump')
         
     game.cleanup()

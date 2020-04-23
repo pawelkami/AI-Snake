@@ -5,6 +5,7 @@ from keras.optimizers import Adam
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout
 from keras.utils.np_utils import to_categorical
+import collections
 
 import numpy as np
 
@@ -20,12 +21,30 @@ class CellItemType(enum.Enum):
         return self.value
     
     
+class MemoryItem:  
+    def __init__(self, state, last_decision, reward, next_state, end):
+        self.state = state
+        self.last_decision = last_decision
+        self.reward = reward
+        self.next_state = next_state
+        self.end = end
+    
+    
 class AIController(Controller):
     player = None
     game = None
     neural_network = None
     learning_rate = 0.0005
-    first_layer = 150
+    discount = 0.6 # 0.6 is the best 
+    
+    epsilon = 0.1
+    epsilon_decay_linear = 1/200
+    
+    memory_size = 3000
+    replay_size = 500
+    memory = collections.deque(maxlen=memory_size)
+    
+    first_layer = 100
     second_layer = 150
     third_layer = 150
     train_flag = True
@@ -35,11 +54,27 @@ class AIController(Controller):
         self.game = game
         self.reward = 0
         self.score = 0
+        if self.train_flag:
+            #self.epsilon = 1 - (self.game.game_count * self.epsilon_decay_linear)
+            self.player.positions[0].x = 240
+            self.player.positions[0].y = 240
+            self.game.fruit.position.x = 200
+            self.game.fruit.position.y = 200       
+            self.player._set_move(Move.RIGHT)
+        else:
+            self.epsilon = 0
+            
         self.last_state = self.get_snake_vision()
         self.last_decision = None
         
         if not self.neural_network:
             self.create_network()
+            
+        self.replay()
+            
+            
+    def save_to_memory(self, state, decision, reward, next_state, end):
+        self.memory.append(MemoryItem(state, decision, reward, next_state, end))
             
             
     def get_input_size(self):
@@ -67,6 +102,11 @@ class AIController(Controller):
     
     
     def get_snake_vision(self):
+        if self.game.is_end():
+            return np.asarray([1, 1, 1, 1, 1, 1, 1,
+                               1, 1, 1, 1, 1, 1, 1,
+                               0, 0, 0, 0, 0, 0, 0])
+            
         board = self.board_state_to_list()
         directions = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)] # up, up-right, right...
         
@@ -81,47 +121,66 @@ class AIController(Controller):
             directions_for_move = directions[3:] + directions[:2]
         
         vision = []
-        for cell in (CellItemType.WALL, CellItemType.FRUIT, CellItemType.BODY):
+        for cell in (CellItemType.WALL, CellItemType.BODY, CellItemType.FRUIT):
             for direction in directions_for_move:
                 vision.append(self.scan(board, self.player.positions[0], cell, direction))
             
-    
         return np.asarray(vision)
         
     
     
     def make_move(self):
         self.last_state = self.get_snake_vision()
-        prediction = self.neural_network.predict(self.last_state.reshape((1, self.get_input_size())))
-        self.last_decision = to_categorical(np.argmax(prediction[0]), num_classes=3)
+        if random.random() < self.epsilon:
+            self.last_decision = to_categorical(random.randint(0, 2), num_classes=3)
+        else:
+            prediction = self.neural_network.predict(self.last_state.reshape((1, self.get_input_size())))
+            self.last_decision = to_categorical(np.argmax(prediction[0]), num_classes=3)
         
-        if self.last_decision[0]:   # left
+        if self.last_decision[2]:   # left
             self.player.turn_left()
-        elif self.last_decision[1]: # forward
-            pass
-        elif self.last_decision[2]: # right
+        elif self.last_decision[1]: # right
             self.player.turn_right()
+        elif self.last_decision[0]: # forward
+            pass
         
             
     def set_reward(self):
         self.reward = 0
         if self.player.get_score() > self.score:
             self.score = self.player.get_score()
-            self.reward = 500
+            self.reward = 100
         elif self.game.is_end():
-            self.reward = -500
-        # else:
-        #     self.reward = - self.player.positions[0].distance(self.game.fruit.position) / self.player.step
+            self.reward = -100
         
-    
+        
+    def replay(self):
+        if len(self.memory) > self.replay_size:
+            curr_replay = random.sample(self.memory, self.replay_size)
+        else:
+            curr_replay = self.memory
+            
+        for item in curr_replay:
+            reward = item.reward
+            if not item.end:
+                reward += self.discount * np.amax(self.neural_network.predict(item.next_state.reshape((1, self.get_input_size())))[0])
+            
+            target_f = self.neural_network.predict(item.state.reshape((1, self.get_input_size())))
+            target_f[0][np.argmax(item.last_decision)] = reward
+            self.neural_network.fit(item.state.reshape((1, self.get_input_size())), target_f, epochs=1, verbose=0)
+            
     
     def update_state(self):
         if self.train_flag:
             self.set_reward()
-            #print(self.reward)
+            if not self.game.is_end():
+                self.reward += self.discount * np.amax(self.neural_network.predict(self.get_snake_vision().reshape((1, self.get_input_size())))[0])
+            
             target_f = self.neural_network.predict(self.last_state.reshape((1, self.get_input_size())))
             target_f[0][np.argmax(self.last_decision)] = self.reward
             self.neural_network.fit(self.last_state.reshape((1, self.get_input_size())), target_f, epochs=1, verbose=0)
+            
+            self.save_to_memory(self.last_state, self.last_decision, self.reward, self.get_snake_vision(), self.game.is_end())
     
     
     def get_board_width(self):
@@ -174,12 +233,13 @@ class AIController(Controller):
     
     def create_network(self):
         self.neural_network = Sequential()
-        self.neural_network.add(Dense(output_dim=self.first_layer, activation='relu', input_dim=self.get_input_size()))
-        self.neural_network.add(Dense(output_dim=self.second_layer, activation='relu'))
-        self.neural_network.add(Dense(output_dim=self.third_layer, activation='relu'))
-        self.neural_network.add(Dense(output_dim=3, activation='softmax'))
+        self.neural_network.add(Dense(units=self.first_layer, activation='relu', input_dim=self.get_input_size()))
+        self.neural_network.add(Dense(units=self.second_layer, activation='relu'))
+        #self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
+        self.neural_network.add(Dense(units=3, activation='softmax'))
         
         opt = Adam(self.learning_rate)
         self.neural_network.compile(loss='mse', optimizer=opt)
+        self.neural_network.summary()
     
     
