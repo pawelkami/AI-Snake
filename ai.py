@@ -35,18 +35,18 @@ class AIController(Controller):
     game = None
     neural_network = None
     learning_rate = 0.0005
-    discount = 0.6 # 0.6 is the best 
+    discount = 0.5 # 0.6 is the best 
     
     epsilon = 0.1
     epsilon_decay_linear = 1/200
     
-    memory_size = 3000
+    memory_size = 2000
     replay_size = 500
     memory = collections.deque(maxlen=memory_size)
     
     first_layer = 100
-    second_layer = 150
-    third_layer = 150
+    second_layer = 36
+    third_layer = 36
     train_flag = True
     
     def init(self, player, game):
@@ -89,12 +89,12 @@ class AIController(Controller):
 
             if x < self.get_min_x() or x >= self.get_max_x() or y < self.get_min_y() or y >= self.get_max_y():
                 if itemType == CellItemType.WALL:
-                    return 1 / start_pos.distance(Position(x, y))
+                    return 1 / (start_pos.distance(Position(x, y)) / self.player.step)
                 break
             
             curr_idx = self.coordinates_to_board_index(x, y)
             if board[curr_idx] == int(itemType):
-                return 1 / start_pos.distance(Position(x, y))
+                return 1 / (start_pos.distance(Position(x, y)) / self.player.step)
             
             i += 1
             
@@ -233,9 +233,11 @@ class AIController(Controller):
     
     def create_network(self):
         self.neural_network = Sequential()
-        self.neural_network.add(Dense(units=self.first_layer, activation='relu', input_dim=self.get_input_size()))
+        # w pierwszym chyba musi byc wiecej neuronow - self.first_layer
+        self.neural_network.add(Dense(units=self.get_input_size(), activation='relu', input_dim=self.get_input_size()))
         self.neural_network.add(Dense(units=self.second_layer, activation='relu'))
-        #self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
+        self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
+        self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
         self.neural_network.add(Dense(units=3, activation='softmax'))
         
         opt = Adam(self.learning_rate)

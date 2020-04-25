@@ -99,7 +99,11 @@ class Game:
         self.window_width = WINDOW_TO_STEP_MULTIPLIER * self.player.step
         self.window_height = WINDOW_TO_STEP_MULTIPLIER * self.player.step
         
-        self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
+        if isinstance(self.controller, AIController):
+            self._display_surf = pygame.display.set_mode((self.window_width * 2 + 200, self.window_height + 220), pygame.HWSURFACE)
+        else:
+            self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
+ 
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
         self._generate_init_player_state()
