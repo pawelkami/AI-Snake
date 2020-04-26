@@ -1,17 +1,15 @@
 from controller import *
 import random
-
 from keras.optimizers import Adam
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout
 from keras.utils.np_utils import to_categorical
 import collections
-
 from pygame import gfxdraw
 import pygame
-
 import numpy as np
 
+WEIGHTS_FILEPATH = "weights.dump"
 
 class CellItemType(enum.Enum):
     WALL = -1
@@ -72,6 +70,9 @@ class AIController(Controller):
         
         if not self.neural_network:
             self.create_network()
+            
+            if not self.train_flag:
+                self.neural_network.load_weights(WEIGHTS_FILEPATH)
             
         self.replay()
         

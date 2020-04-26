@@ -235,14 +235,16 @@ class Game:
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ai', action='store_true', help="AI controlls snake")
     parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
     parser.add_argument('--count', type=int, default=100, help='Game count to play. Default: 100')
+    parser.add_argument('--ai', action='store_true', help="AI controlls snake")
+    parser.add_argument("--train", action='store_true', help="Train AI model")
     args = parser.parse_args()
     
     controller = KeyboardController()
     if args.ai:
         controller = AIController()
+        controller.train_flag = args.train
         
     score_in_game = []
     highscore_in_game = [] 
@@ -254,7 +256,7 @@ if __name__ == "__main__":
         highscore_in_game.append(game.highscore)
         print("Game count: {} Highscore: {} Score: {}".format(game.game_count, game.highscore, game.get_score()))
         
-        if args.ai:
-            controller.neural_network.save_weights('nn.dump')
+        if args.ai and args.train:
+            controller.neural_network.save_weights(WEIGHTS_FILEPATH)
         
     game.cleanup()
