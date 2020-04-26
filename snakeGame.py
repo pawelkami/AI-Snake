@@ -5,6 +5,10 @@ import random
 import argparse
 from ai import *
 from controller import *
+import matplotlib.pyplot as plt
+import numpy as np
+import statistics
+from sklearn.linear_model import LinearRegression
 
 INITIAL_LENGTH = 1
 WINDOW_TO_STEP_MULTIPLIER = 20
@@ -233,6 +237,27 @@ class Game:
     
     
     
+    
+def draw_plot(score_in_game, highscore_in_game):
+    fig, ax = plt.subplots()
+    ax.set_xlabel('games')
+    ax.set_ylabel('score')
+    
+    X = np.linspace(1, len(score_in_game), len(score_in_game))
+    X_lin = X.reshape(-1, 1)
+    
+    linear_regressor = LinearRegression()
+    linear_regressor.fit(X_lin, score_in_game)
+    Y_pred = linear_regressor.predict(X_lin)
+    
+    ax.scatter(X, score_in_game, label='score', color='blue')
+    ax.plot(X, highscore_in_game, label='highscore', color='orange')
+    ax.plot(X, Y_pred, label='linear regression', color='red')
+    ax.legend()
+    ax.grid()
+    
+    plt.show()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
@@ -258,5 +283,7 @@ if __name__ == "__main__":
         
         if args.ai and args.train:
             controller.neural_network.save_weights(WEIGHTS_FILEPATH)
-        
+    
+    print(f"Mean score from all games: {statistics.mean(score_in_game)}")    
+    draw_plot(score_in_game, highscore_in_game)
     game.cleanup()
