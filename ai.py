@@ -40,7 +40,7 @@ class AIController(Controller):
     learning_rate = 0.0005
     discount = 0.5 # 0.6 is the best 
     
-    epsilon = 0.1
+    epsilon = 0.2
     epsilon_decay_linear = 1/200
     
     memory_size = 2000
@@ -58,7 +58,7 @@ class AIController(Controller):
         self.reward = 0
         self.score = 0
         if self.train_flag:
-            #self.epsilon = 1 - (self.game.game_count * self.epsilon_decay_linear)
+            self.epsilon -= self.epsilon_decay_linear
             self.player.positions[0].x = 240
             self.player.positions[0].y = 240
             self.game.fruit.position.x = 200
@@ -149,8 +149,6 @@ class AIController(Controller):
             self.player.turn_right()
         elif self.last_decision[2]: # forward
             pass
-        
-        self.render_network()
         
             
     def set_reward(self):
