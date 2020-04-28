@@ -179,6 +179,8 @@ class Game:
         self.draw_ui()
         self.draw_snake()
         self.draw_fruit()
+        
+        self.controller.display_controller_gui()
 
         pygame.display.flip()
         

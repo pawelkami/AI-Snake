@@ -39,6 +39,9 @@ class Controller:
     
     def update_state(self):
         pass
+    
+    def display_controller_gui(self):
+        pass
 
 class KeyboardController(Controller):
     player = None
@@ -59,5 +62,8 @@ class KeyboardController(Controller):
             
     
     def update_state(self):
+        pass
+    
+    def display_controller_gui(self):
         pass
     

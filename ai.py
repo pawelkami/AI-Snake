@@ -7,6 +7,9 @@ from keras.layers.core import Dense, Dropout
 from keras.utils.np_utils import to_categorical
 import collections
 
+from pygame import gfxdraw
+import pygame
+
 import numpy as np
 
 
@@ -71,6 +74,9 @@ class AIController(Controller):
             self.create_network()
             
         self.replay()
+        
+    def display_controller_gui(self):
+        self.render_network()
             
             
     def save_to_memory(self, state, decision, reward, next_state, end):
@@ -137,12 +143,14 @@ class AIController(Controller):
             prediction = self.neural_network.predict(self.last_state.reshape((1, self.get_input_size())))
             self.last_decision = to_categorical(np.argmax(prediction[0]), num_classes=3)
         
-        if self.last_decision[2]:   # left
+        if self.last_decision[0]:   # left
             self.player.turn_left()
         elif self.last_decision[1]: # right
             self.player.turn_right()
-        elif self.last_decision[0]: # forward
+        elif self.last_decision[2]: # forward
             pass
+        
+        self.render_network()
         
             
     def set_reward(self):
@@ -233,7 +241,6 @@ class AIController(Controller):
     
     def create_network(self):
         self.neural_network = Sequential()
-        # w pierwszym chyba musi byc wiecej neuronow - self.first_layer
         self.neural_network.add(Dense(units=self.get_input_size(), activation='relu', input_dim=self.get_input_size()))
         self.neural_network.add(Dense(units=self.second_layer, activation='relu'))
         self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
@@ -244,4 +251,42 @@ class AIController(Controller):
         self.neural_network.compile(loss='mse', optimizer=opt)
         self.neural_network.summary()
     
-    
+    def render_network(self):
+        if self.last_decision is None or self.last_state is None:
+            return           
+        
+        # compute distance between layers
+        network_layers = self.neural_network.layers
+        network_layers_count = len(network_layers)
+        
+        screen_division = self.game.window_width / network_layers_count
+        STEP_SIZE = 1.5
+        CIRCLE_SIZE = 5
+        DISTANCE_LENGTH = 16
+        step = 1
+        for i in range(network_layers_count):
+            for j in range(network_layers[i].units):
+                y = int((self.game.window_height + 200) / 2 + (j * DISTANCE_LENGTH) - (network_layers[i].units - 1)/2 * DISTANCE_LENGTH)
+                x = int(self.game.window_width + step * screen_division)
+                
+                fill_factor = 0
+                if i == 0:
+                    fill_factor = int(self.last_state[j] * 255)
+                elif i == network_layers_count - 1:
+                    fill_factor = int(self.last_decision[j] * 255)
+                    
+                # draw connections
+                if i < network_layers_count - 1:
+                    for k in range(network_layers[i + 1].units):
+                        y2 = int((self.game.window_height + 200) / 2 + (k * DISTANCE_LENGTH) - (network_layers[i + 1].units - 1)/2 * DISTANCE_LENGTH)
+                        x2 = int(self.game.window_width + (step + STEP_SIZE) * screen_division)
+                        
+                        fill_factor_line = 60
+                        # input layer
+                        if i == 0:
+                            fill_factor_line = fill_factor / 2 + 40
+                        pygame.gfxdraw.line(self.game._display_surf, x + 2, y, x2, y2, (fill_factor_line, fill_factor_line, fill_factor_line, fill_factor_line))
+                
+                pygame.gfxdraw.filled_circle(self.game._display_surf, x, y, CIRCLE_SIZE, (fill_factor, fill_factor, fill_factor))
+                pygame.gfxdraw.aacircle(self.game._display_surf, x, y, CIRCLE_SIZE, (255, 255, 255))
+            step += STEP_SIZE
