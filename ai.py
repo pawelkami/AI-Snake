@@ -8,6 +8,7 @@ import collections
 from pygame import gfxdraw
 import pygame
 import numpy as np
+import network_visualiser
 
 WEIGHTS_FILEPATH = "weights.dump"
 
@@ -76,8 +77,9 @@ class AIController(Controller):
             
         self.replay()
         
+        
     def display_controller_gui(self):
-        self.render_network()
+        network_visualiser.render_network(self.game._display_surf, self.game.board_rect.right + 140, self.neural_network, self.last_decision, self.last_state)
             
             
     def save_to_memory(self, state, decision, reward, next_state, end):
@@ -249,43 +251,3 @@ class AIController(Controller):
         opt = Adam(self.learning_rate)
         self.neural_network.compile(loss='mse', optimizer=opt)
         self.neural_network.summary()
-    
-    def render_network(self):
-        if self.last_decision is None or self.last_state is None:
-            return           
-        
-        # compute distance between layers
-        network_layers = self.neural_network.layers
-        network_layers_count = len(network_layers)
-        
-        screen_division = self.game.window_width / network_layers_count
-        STEP_SIZE = 1.5
-        CIRCLE_SIZE = 5
-        DISTANCE_LENGTH = 16
-        step = 1
-        for i in range(network_layers_count):
-            for j in range(network_layers[i].units):
-                y = int((self.game.window_height + 200) / 2 + (j * DISTANCE_LENGTH) - (network_layers[i].units - 1)/2 * DISTANCE_LENGTH)
-                x = int(self.game.window_width + step * screen_division)
-                
-                fill_factor = 0
-                if i == 0:
-                    fill_factor = int(self.last_state[j] * 255)
-                elif i == network_layers_count - 1:
-                    fill_factor = int(self.last_decision[j] * 255)
-                    
-                # draw connections
-                if i < network_layers_count - 1:
-                    for k in range(network_layers[i + 1].units):
-                        y2 = int((self.game.window_height + 200) / 2 + (k * DISTANCE_LENGTH) - (network_layers[i + 1].units - 1)/2 * DISTANCE_LENGTH)
-                        x2 = int(self.game.window_width + (step + STEP_SIZE) * screen_division)
-                        
-                        fill_factor_line = 60
-                        # input layer
-                        if i == 0:
-                            fill_factor_line = fill_factor / 2 + 40
-                        pygame.gfxdraw.line(self.game._display_surf, x + 2, y, x2, y2, (fill_factor_line, fill_factor_line, fill_factor_line, fill_factor_line))
-                
-                pygame.gfxdraw.filled_circle(self.game._display_surf, x, y, CIRCLE_SIZE, (fill_factor, fill_factor, fill_factor))
-                pygame.gfxdraw.aacircle(self.game._display_surf, x, y, CIRCLE_SIZE, (255, 255, 255))
-            step += STEP_SIZE
