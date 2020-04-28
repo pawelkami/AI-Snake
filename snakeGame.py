@@ -282,7 +282,7 @@ if __name__ == "__main__":
         print("Game count: {} Highscore: {} Score: {}".format(game.game_count, game.highscore, game.get_score()))
         
         if args.ai and args.train:
-            controller.neural_network.save_weights(WEIGHTS_FILEPATH)
+            controller.neural_network.save(MODEL_FILEPATH)
     
     print(f"Mean score from all games: {statistics.mean(score_in_game)}")    
     draw_plot(score_in_game, highscore_in_game)

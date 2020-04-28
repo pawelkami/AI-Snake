@@ -1,7 +1,7 @@
 from controller import *
 import random
 from keras.optimizers import Adam
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers.core import Dense, Dropout
 from keras.utils.np_utils import to_categorical
 import collections
@@ -10,7 +10,7 @@ import pygame
 import numpy as np
 import network_visualiser
 
-WEIGHTS_FILEPATH = "weights.dump"
+MODEL_FILEPATH = "model.h5"
 
 class CellItemType(enum.Enum):
     WALL = -1
@@ -46,7 +46,7 @@ class AIController(Controller):
     replay_size = 500
     memory = collections.deque(maxlen=memory_size)
     
-    first_layer = 100
+    first_layer = 36
     second_layer = 36
     third_layer = 36
     train_flag = True
@@ -64,16 +64,16 @@ class AIController(Controller):
             self.game.fruit.position.y = 200       
             self.player._set_move(Move.RIGHT)
         else:
-            self.epsilon = 0
+            self.epsilon = 0.05
             
         self.last_state = self.get_snake_vision()
         self.last_decision = None
         
         if not self.neural_network:
-            self.create_network()
-            
-            if not self.train_flag:
-                self.neural_network.load_weights(WEIGHTS_FILEPATH)
+            if self.train_flag:
+                self.create_network()
+            else:
+                self.neural_network = load_model(MODEL_FILEPATH)
             
         self.replay()
         
@@ -243,8 +243,8 @@ class AIController(Controller):
     def create_network(self):
         self.neural_network = Sequential()
         self.neural_network.add(Dense(units=self.get_input_size(), activation='relu', input_dim=self.get_input_size()))
+        self.neural_network.add(Dense(units=self.first_layer, activation='relu'))
         self.neural_network.add(Dense(units=self.second_layer, activation='relu'))
-        self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
         self.neural_network.add(Dense(units=self.third_layer, activation='relu'))
         self.neural_network.add(Dense(units=3, activation='softmax'))
         
