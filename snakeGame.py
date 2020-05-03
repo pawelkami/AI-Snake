@@ -196,7 +196,7 @@ class Game:
         last_move = self.player.last_move
         self.controller.make_move()
         if last_move != self.player.last_move:
-            self.moves_left -= 1 # TODO -= 200
+            self.moves_left -= 1
         
         
     def update_snake(self):

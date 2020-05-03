@@ -36,10 +36,10 @@ class AIController(Controller):
     player = None
     game = None
     neural_network = None
-    learning_rate = 0.0005
-    discount = 0.5 # 0.6 is the best 
+    learning_rate = 0.0002
+    discount = 0.6 # 0.6 is the best 
     
-    epsilon = 0.2
+    epsilon = 0.25
     epsilon_decay_linear = 1/200
     
     memory_size = 2000
