@@ -104,7 +104,7 @@ class Game:
         self.window_height = WINDOW_TO_STEP_MULTIPLIER * self.player.step
         
         if isinstance(self.controller, AIController):
-            self._display_surf = pygame.display.set_mode((self.window_width * 2 + 200, self.window_height + 220), pygame.HWSURFACE)
+            self._display_surf = pygame.display.set_mode((self.window_width * 2 + 250, self.window_height + 200), pygame.HWSURFACE)
         else:
             self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
  
@@ -133,8 +133,8 @@ class Game:
         
         
     def draw_ui(self):
-        myfont = pygame.font.SysFont('Segoe UI', 23)
-        myfont_bold = pygame.font.SysFont('Segoe UI', 23, True)
+        myfont = pygame.font.SysFont('Segoe UI', 24)
+        myfont_bold = pygame.font.SysFont('Segoe UI', 24, True)
         
         text_game_count = myfont.render('GAME COUNT: ', True, (255, 255, 255))
         text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))  
@@ -146,15 +146,17 @@ class Game:
         text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
         
-        self._display_surf.blit(text_game_count, (45, self.window_height + 50))
-        self._display_surf.blit(text_game_count_number, (180, self.window_height + 50))
-        self._display_surf.blit(text_moves_left, (220, self.window_height + 50))
-        self._display_surf.blit(text_moves_left_number, (360, self.window_height + 50))
+        bottom = self._display_surf.get_rect().bottom
         
-        self._display_surf.blit(text_score, (45, self.window_height + 100))
-        self._display_surf.blit(text_score_number, (180, self.window_height + 100))
-        self._display_surf.blit(text_highest, (220, self.window_height + 100))
-        self._display_surf.blit(text_highest_number, (360, self.window_height + 100))
+        self._display_surf.blit(text_game_count, (45, bottom - 130))
+        self._display_surf.blit(text_game_count_number, (180, bottom - 130))
+        self._display_surf.blit(text_moves_left, (210, bottom - 130))
+        self._display_surf.blit(text_moves_left_number, (360, bottom - 130))
+        
+        self._display_surf.blit(text_score, (45, bottom - 70))
+        self._display_surf.blit(text_score_number, (180, bottom - 70))
+        self._display_surf.blit(text_highest, (210, bottom - 70))
+        self._display_surf.blit(text_highest_number, (360, bottom - 70))
 
 
     def draw_snake(self):
