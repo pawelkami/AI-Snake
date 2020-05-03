@@ -218,7 +218,7 @@ class Game:
         
         if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
             self.player.make_bigger()
-            self.moves_left = MAX_MOVES_COUNT
+            self.moves_left = MAX_MOVES_COUNT + self.player.get_snake_length()
             self.generate_fruit()
             if self.player.get_score() > self.highscore:
                 self.highscore = self.player.get_score()

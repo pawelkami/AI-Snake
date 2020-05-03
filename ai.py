@@ -64,7 +64,7 @@ class AIController(Controller):
             self.game.fruit.position.y = 200       
             self.player._set_move(Move.RIGHT)
         else:
-            self.epsilon = 0.05
+            self.epsilon = 0
             
         self.last_state = self.get_snake_vision()
         self.last_decision = None
